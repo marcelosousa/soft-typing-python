@@ -1,0 +1,319 @@
+pragma datarecords
+
+{
+-------------------------------------------------------------------------------
+-- Module    :  IPython.AST
+-- Copyright :  (c) 2011 Marcelo Sousa, Alessandro Vermeulen, Thijs Alkemade 
+-- This AG module contains the AST that we convert the parser result from
+-- The analyzed fields are annotated with Label.  
+}
+
+module {IPython.AST}{}
+
+{
+import Data.Data  
+  
+defaultStartLabel :: Label
+defaultStartLabel = -1
+
+magicReturnVariable :: String
+magicReturnVariable = "*return"
+}
+
+type Label 		  = (Int)
+
+data LabelAnnot | NoLabel
+                | Label1 l1 :: Label
+                | Label2 l1 :: Label 
+                         l2 :: Label
+deriving LabelAnnot: Show
+                
+type Strings      = [ String ]
+type ISuite       = [ IStatement ]
+type IExprs       = [ IExpr ]
+type IParams      = [ IParameter ]
+type IArgs        = [ IArgument ] 
+type IGuards      = [ IGuard ] 
+type IImportItems = [ IImportItem ]
+type IDottedName  = [ String ]
+type ILFromItem   = [ IFromItem ]
+type IDecorators  = [ IDecorator ] 
+type IHandlers    = [ IHandler ] 
+type IExceptClauseType  = (IExpr, Maybe IExpr)
+type IExceptClauseType2 = (IExpr, Maybe IExceptClauseType)
+type PairExprMybExpr = (IExpr, Maybe IExpr)
+type MybExpr = maybe IExpr
+type IContext     = [ PairExprMybExpr ] 
+type IIdents      = [ String ]
+type IIdent       = (String)
+     
+-- Module AST
+data IModule
+	| IModule stats :: ISuite
+		
+data IStatement
+	| IImport
+		items :: IImportItems
+		label :: Label
+	| IFromImport
+		modul :: IImportRelative
+		items :: IFromItems
+		label :: Label
+	| IWhile 
+		cond :: IExpr
+		body :: ISuite
+		else :: ISuite
+		label :: Label
+	| IFor   
+		targets   :: IExprs
+		generator :: IExpr
+		body      :: ISuite
+		else      :: ISuite
+	| IFun
+		name   :: String
+		args   :: IParams
+		result :: MybExpr
+		body   :: ISuite
+		entry  :: Label
+	| IClass 
+		name  :: String
+		args  :: IArgs
+		body  :: ISuite
+	| IConditional		
+		guards :: IGuards
+		else   :: ISuite
+	| IAssign
+		to    :: IExprs
+		expr  :: IExpr
+		label :: Label
+	| IAugmentedAssign
+		to    :: IExpr
+		op    :: IAssignOp
+		expr  :: IExpr 
+		label :: Label
+	| IDecorated
+		decorators :: IDecorators
+		stat   :: IStatement	
+	| IReturn
+		expr  :: MybExpr
+		label :: Label      
+	| ITry
+		body    :: ISuite
+		excepts :: IHandlers
+		else    :: ISuite
+		finally :: ISuite
+	| IRaise
+		expr  :: IRaiseExpr
+	| IWith
+		context :: IContext
+		body    :: ISuite
+	| IPass
+		label   :: Label
+	| IBreak
+		label   :: Label
+	| IContinue
+		label   :: Label
+	| IDelete
+		exprs   :: IExprs
+	| IStmtExpr
+		expr  :: IExpr
+	| IGlobal
+		vars :: IIdents
+		label :: Label 
+	| INonLocal
+		vars :: IIdents
+		label :: Label
+	| IAssert
+		exprs :: IExprs
+	| IPrint
+		chevron    :: Bool
+		exprs      :: IExprs
+		trailcomma :: Bool
+		label :: Label
+	| IExec
+		expr     :: IExpr
+		globlocs :: (Maybe PairExprMybExpr)
+
+data IImportRelative
+  | IImportRelative
+		dots  :: Int
+		modul :: (Maybe IDottedName)
+		 
+data IImportItem
+  | IImportItem
+		name :: IDottedName
+		asname :: (Maybe String)
+            
+data IFromItem
+  | IFromItem
+		name :: String
+		asname :: (Maybe String)
+            
+data IFromItems
+  | IImportEverything
+  | IFromItems 
+		items :: ILFromItem     
+
+data IDecorator
+  | IDecorator 
+		name :: IDottedName
+        args :: IArgs
+
+data IHandler 
+  | IHandler
+		clause :: IExceptClause
+		suite  :: ISuite
+
+data IExceptClause
+  | IExceptClause
+		clause :: (Maybe IExceptClauseType)
+		
+data IRaiseExpr
+  | IRaiseV3 
+		raisev3 :: (Maybe IExceptClauseType) 
+  | IRaiseV2 
+		raisev2 :: (Maybe IExceptClauseType2)	
+			
+data IParameter
+  | IParam
+		name 	 :: String
+		py_annot :: MybExpr
+		default  :: MybExpr
+  | IVarArgsPos
+		name     :: String
+		py_annot :: MybExpr
+  | IParamNotSupported 
+
+data IArgument 
+  | IArgExpr
+		expr :: IExpr
+		label :: Label
+  | IArgVarArgsPos
+		expr :: IExpr
+  | IArgNotSupported
+		
+data IExpr
+  | IVar
+		var_ident :: String
+  | IInt 
+		int_value :: Integer
+		expr_literal :: String
+  | ILongInt 
+		int_value :: Integer
+		expr_literal :: String
+  | IFloat 
+		float_value :: Double
+		expr_literal :: String
+  | IImaginary 
+		imaginary_value :: Double
+		expr_literal :: String
+  | IBool 
+		bool_value :: Bool		
+  | INone   
+-- |
+  | IString 
+      expr_literal :: Strings
+-- | Function call. 
+  | ICall 
+  		call_fun :: IExpr 
+  		call_args :: IArgs 
+  		call_callLabel   :: Label
+  		call_returnLabel :: Label
+  | ISubscript 
+		subscriptee :: IExpr 
+		subscript_expr :: IExpr 
+-- | Conditional expresison. 
+  | ICondExpr 
+  		ce_true_branch :: IExpr 
+  		ce_condition :: IExpr
+  		ce_false_branch :: IExpr 
+-- | Binary operator application.
+  | IBinaryOp 
+		operator :: IOp 	
+		left_op_arg :: IExpr
+		right_op_arg :: IExpr 
+-- | Unary operator application.
+  | IUnaryOp 
+		operator :: IOp 
+		op_arg :: IExpr 
+-- | Anonymous function definition (lambda). 
+  | ILambda 
+		lambda_args :: IParams
+		lambda_body :: IExpr 
+-- | Tuple. Can be empty. 
+  | ITuple 
+		tuple_exprs :: IExprs
+-- | List. 
+  | IList 
+		list_exprs :: IExprs
+-- | Set. 
+  | ISet 
+		set_exprs :: IExprs
+-- | Parenthesised expression.
+  | IParen 
+		paren_expr :: IExpr
+-- | String conversion (backquoted expression). Version 2 only. 
+  | IStringConversion
+ 		backquoted_expr :: IExpr 		
+  | IExprNotSupported
+
+data IOp
+  | IAnd  -- ^ \'and\'
+  | IOr  -- ^ \'or\'
+  | INot  -- ^ \'not\'
+  | IExponent  -- ^ \'**\'
+  | ILessThan  -- ^ \'<\'
+  | IGreaterThan  -- ^ \'>\'
+  | IEquality  -- ^ \'==\'
+  | IGreaterThanEquals  -- ^ \'>=\' 
+  | ILessThanEquals  -- ^ \'<=\'
+  | INotEquals   -- ^ \'!=\'
+  | INotEqualsV2   -- ^ \'<>\'. Version 2 only.
+  | IIn  -- ^ \'in\'
+  | IIs  -- ^ \'is\'
+  | IIsNot  -- ^ \'is not\'
+  | INotIn  -- ^ \'not in\'
+  | IBinaryOr  -- ^ \'|\'
+  | IXor  -- ^ \'^\'
+  | IBinaryAnd  -- ^ \'&\'
+  | IShiftLeft  -- ^ \'<<\'
+  | IShiftRight  -- ^ \'>>\'
+  | IMultiply  -- ^ \'*\'
+  | IPlus  -- ^ \'+\'
+  | IMinus  -- ^ \'-\'
+  | IDivide  -- ^ \'\/\'
+  | IFloorDivide  -- ^ \'\/\/\'
+  | IInvert  -- ^ \'~\' (bitwise inversion of its integer argument)
+  | IModulo  -- ^ \'%\'
+  | IDot  -- ^ \'.\'
+
+data IAssignOp
+  | IPlusAssign -- ^ \'+=\'
+  | IMinusAssign -- ^ \'-=\'
+  | IMultAssign -- ^ \'*=\'
+  | IDivAssign -- ^ \'\/=\'
+  | IModAssign -- ^ \'%=\'
+  | IPowAssign -- ^ \'*=\'
+  | IBinAndAssign -- ^ \'&=\'
+  | IBinOrAssign -- ^ \'|=\'
+  | IBinXorAssign -- ^ \'^=\' 
+  | ILeftShiftAssign -- ^ \'<<=\'
+  | IRightShiftAssign -- ^ \'>>=\'
+  | IFloorDivAssign -- ^ \'\/\/=\ 
+
+data IGuard
+  | IGuard cond  :: IExpr
+           body  :: ISuite
+           label :: Label
+       	   
+set Every = IModule IStatement IArgument IExpr IOp IParameter IAssignOp IDecorator IImportRelative IFromItems IImportItem IRaiseExpr IHandler IHandlers IFromItem IExceptClause IGuard IGuards ISuite IExprs IArgs
+
+deriving Every: Show
+deriving Every: Eq
+
+optpragmas{
+{-# LANGUAGE DeriveDataTypeable #-}
+}
+
+deriving Every: Data
+deriving Every: Typeable

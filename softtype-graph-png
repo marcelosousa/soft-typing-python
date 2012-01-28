@@ -1,0 +1,2 @@
+# !/bin/sh
+./softtype -t=AnnGraph $1 | dot -Tpng -o $2

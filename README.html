@@ -1,0 +1,1056 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.6.4" />
+<title>Soft-typing of Python</title>
+<style type="text/css">
+/* Sans-serif font. */
+h1, h2, h3, h4, h5, h6,
+div.title, caption.title,
+thead, p.table.header,
+div#toctitle,
+span#author, span#revnumber, span#revdate, span#revremark,
+div#footer {
+  font-family: Arial,Helvetica,sans-serif;
+}
+
+/* Serif font. */
+div.sectionbody {
+  font-family: Georgia,"Times New Roman",Times,serif;
+}
+
+/* Monospace font. */
+tt {
+  font-size: inherit;
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+tt {
+  font-size: inherit;
+  color: navy;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+
+div.sectionbody {
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+ul > li     { color: #aaa; }
+ul > li > * { color: black; }
+
+pre {
+  padding: 0;
+  margin: 0;
+}
+
+span#author {
+  color: #527bbd;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+span#email {
+}
+span#revnumber, span#revdate, span#revremark {
+}
+
+div#footer {
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+div#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+div#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+div#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.tableblock, div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.0em;
+  margin-bottom: 2.0em;
+  margin-right: 10%;
+  color: #606060;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid #dddddd;
+  border-left: 4px solid #f0f0f0;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
+  background: #f8f8f8;
+  padding: 0.5em;
+}
+
+div.quoteblock, div.verseblock {
+  padding-left: 1.0em;
+  margin-left: 1.0em;
+  margin-right: 10%;
+  border-left: 5px solid #f0f0f0;
+  color: #777777;
+}
+
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock > pre.content {
+  font-family: inherit;
+  font-size: inherit;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 3px solid #dddddd;
+}
+
+div.exampleblock > div.content {
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+span.image img { border-style: none; }
+a.image:visited { color: white; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead, p.table.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overriden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+.footnote, .footnoteref {
+  font-size: 0.8em;
+}
+
+span.footnote, span.footnoteref {
+  vertical-align: super;
+}
+
+#footnotes {
+  margin: 20px 0 20px 0;
+  padding: 7px 0 0 0;
+}
+
+#footnotes div.footnote {
+  margin: 0 0 5px 0;
+}
+
+#footnotes hr {
+  border: none;
+  border-top: 1px solid silver;
+  height: 1px;
+  text-align: left;
+  margin-left: 0;
+  width: 20%;
+  min-width: 100px;
+}
+
+div.colist td {
+  padding-right: 0.5em;
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+div.colist td img {
+  margin-top: 0.3em;
+}
+
+@media print {
+  div#footer-badges { display: none; }
+}
+
+div#toc {
+  margin-bottom: 2.5em;
+}
+
+div#toctitle {
+  color: #527bbd;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+
+span.aqua { color: aqua; }
+span.black { color: black; }
+span.blue { color: blue; }
+span.fuchsia { color: fuchsia; }
+span.gray { color: gray; }
+span.green { color: green; }
+span.lime { color: lime; }
+span.maroon { color: maroon; }
+span.navy { color: navy; }
+span.olive { color: olive; }
+span.purple { color: purple; }
+span.red { color: red; }
+span.silver { color: silver; }
+span.teal { color: teal; }
+span.white { color: white; }
+span.yellow { color: yellow; }
+
+span.aqua-background { background: aqua; }
+span.black-background { background: black; }
+span.blue-background { background: blue; }
+span.fuchsia-background { background: fuchsia; }
+span.gray-background { background: gray; }
+span.green-background { background: green; }
+span.lime-background { background: lime; }
+span.maroon-background { background: maroon; }
+span.navy-background { background: navy; }
+span.olive-background { background: olive; }
+span.purple-background { background: purple; }
+span.red-background { background: red; }
+span.silver-background { background: silver; }
+span.teal-background { background: teal; }
+span.white-background { background: white; }
+span.yellow-background { background: yellow; }
+
+span.big { font-size: 2em; }
+span.small { font-size: 0.6em; }
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+window.onload = function(){asciidoc.footnotes(); asciidoc.toc(2);}
+var asciidoc = {  // Namespace.
+
+/////////////////////////////////////////////////////////////////////
+// Table Of Contents generator
+/////////////////////////////////////////////////////////////////////
+
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+
+// toclevels = 1..4.
+toc: function (toclevels) {
+
+  function getText(el) {
+    var text = "";
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+        text += i.data;
+      else if (i.firstChild != null)
+        text += getText(i);
+    }
+    return text;
+  }
+
+  function TocEntry(el, text, toclevel) {
+    this.element = el;
+    this.text = text;
+    this.toclevel = toclevel;
+  }
+
+  function tocEntries(el, toclevels) {
+    var result = new Array;
+    var re = new RegExp('[hH]([2-'+(toclevels+1)+'])');
+    // Function that scans the DOM tree for header elements (the DOM2
+    // nodeIterator API would be a better technique but not supported by all
+    // browsers).
+    var iterate = function (el) {
+      for (var i = el.firstChild; i != null; i = i.nextSibling) {
+        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+          var mo = re.exec(i.tagName);
+          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+          }
+          iterate(i);
+        }
+      }
+    }
+    iterate(el);
+    return result;
+  }
+
+  var toc = document.getElementById("toc");
+  var entries = tocEntries(document.getElementById("content"), toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "_toc_" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    toc.parentNode.removeChild(toc);
+},
+
+
+/////////////////////////////////////////////////////////////////////
+// Footnotes generator
+/////////////////////////////////////////////////////////////////////
+
+/* Based on footnote generation code from:
+ * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+ */
+
+footnotes: function () {
+  var cont = document.getElementById("content");
+  var noteholder = document.getElementById("footnotes");
+  var spans = cont.getElementsByTagName("span");
+  var refs = {};
+  var n = 0;
+  for (i=0; i<spans.length; i++) {
+    if (spans[i].className == "footnote") {
+      n++;
+      // Use [\s\S] in place of . so multi-line matches work.
+      // Because JavaScript has no s (dotall) regex flag.
+      note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+      noteholder.innerHTML +=
+        "<div class='footnote' id='_footnote_" + n + "'>" +
+        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+        n + "</a>. " + note + "</div>";
+      spans[i].innerHTML =
+        "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+        "' title='View footnote' class='footnote'>" + n + "</a>]";
+      var id =spans[i].getAttribute("id");
+      if (id != null) refs["#"+id] = n;
+    }
+  }
+  if (n == 0)
+    noteholder.parentNode.removeChild(noteholder);
+  else {
+    // Process footnoterefs.
+    for (i=0; i<spans.length; i++) {
+      if (spans[i].className == "footnoteref") {
+        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+        href = href.match(/#.*/)[0];  // Because IE return full URL.
+        n = refs[href];
+        spans[i].innerHTML =
+          "[<a href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+      }
+    }
+  }
+}
+
+}
+/*]]>*/
+</script>
+</head>
+<body class="article">
+<div id="header">
+<h1>Soft-typing of Python</h1>
+<div id="toc">
+  <div id="toctitle">Table of Contents</div>
+  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Look for the README.html file in the same folder, it contains a more
+      readable variant of this text file.</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">1. Authors</h2>
+<div class="sectionbody">
+<div class="olist arabic"><ol class="arabic">
+<li>
+<p>
+Thijs Alkemade (3285960)
+</p>
+</li>
+<li>
+<p>
+Alessandro Vermeulen (3242919)
+</p>
+</li>
+<li>
+<p>
+Marcelo Sousa (3535592)
+</p>
+</li>
+</ol></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Building the HTML version of this document requires <tt>asciidoc</tt> with either
+      pygments or gnu source highlight. asciidoc can be easily installed from
+      source.</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_installing">2. Installing</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Aside from the default Haskell platform packages <tt>base</tt> and <tt>containers</tt>, we
+rely on <tt>pretty</tt> for pretty-printing and <tt>language-python</tt> to parse Python
+source code. All of these can be installed using cabal. The code itself can
+be compiled with the command:</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.4
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>cabal configure <span style="color: #990000">&amp;&amp;</span> cabal build<span style="color: #990000">.</span></tt></pre></div></div>
+<div class="paragraph"><p>Generating the Graphs requires
+<a href="http://www.graphviz.org/Download_macos.php">graphviz</a>.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_analysis">3. The analysis</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The goal of the analysis is to find for each program-point in the program which
+variables are in scope and what their possible types are at that point. This is
+done using forward analysis.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_general_architecture">4. General Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>We are using the <em>Language-Python</em> module to parse the Python source. The
+generated AST is then transformed into our own AST which contains a subset of
+the elements provided by <em>Language-Python</em> and should indicate what we
+support. This AST is annotated with the labels we generate for each element
+where applicable. We generate labels for each statement and two labels for
+a function call. Labeling, creating the control flow graph, and creating the
+conditions - or transfer functions - is done by the AG system. Most of this
+can be found in <tt>src/IPython/Python.ag</tt>. Mostly the attribute names speak for
+themselves. The AST definition can be found in <tt>src/IPython/AST.ag</tt>.</p></div>
+<div class="paragraph"><p>We store two labels per function call because this makes it easier to support
+function calls inside expressions. It would be nasty to have one label for
+each statement but to have two for an assignment if it would only contain a
+function call and otherwise not support it.</p></div>
+<div class="paragraph"><p>The generated information is used in <tt>MinimalFixPoint</tt> to determine for each
+label the set of possible types for each variable that is in scope. The
+<em>Analysis</em> directory contains definitions for use by the Monotone Framework
+and the MFP Analysis algorithm. At first we had a general MFP algorithm, but
+we have specialised it for our use and adapted it to be an embellished monotone
+framework.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_things_we_support">5. Things we support</h2>
+<div class="sectionbody">
+<div class="olist arabic"><ol class="arabic">
+<li>
+<p>
+Rendering graphs (generate a pdf by using <tt>./softtype-graph $testfile $pdf</tt>)
+</p>
+</li>
+</ol></div>
+<div class="paragraph"><p>We support the following features of the Python language:</p></div>
+<div class="olist arabic"><ol class="arabic">
+<li>
+<p>
+If-constructs
+</p>
+</li>
+<li>
+<p>
+While-construct
+</p>
+</li>
+<li>
+<p>
+Function calls
+</p>
+</li>
+<li>
+<p>
+The following types: <tt>int</tt>, <tt>float</tt>, <tt>long</tt>, <tt>complex</tt>, <tt>boolean</tt>, <tt>string</tt>
+   and homogenous lists.
+</p>
+</li>
+<li>
+<p>
+Print statements
+</p>
+</li>
+<li>
+<p>
+Recusive functions
+</p>
+</li>
+</ol></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_things_we_do_not_support">6. Things we do not support</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>There are a number of features of the Python language we do not support:</p></div>
+<div class="olist arabic"><ol class="arabic">
+<li>
+<p>
+Shadowing of variables
+</p>
+</li>
+<li>
+<p>
+Objects
+</p>
+</li>
+<li>
+<p>
+Dynamic Dispatch
+</p>
+</li>
+<li>
+<p>
+Augmented assignments (<tt>+=</tt>, etc.)
+</p>
+</li>
+<li>
+<p>
+Gathering information from conditionals or expressions. This is something we
+   cannot support as due to the limitations of our types and operators each
+   combination of types and parameters is allowed. It does not make sense, but
+   Python allows it. So when we would deduce any type from it&#8217;s usage in an
+   expression we would be unsafe regarding the semantics of the Python runtime.
+</p>
+</li>
+</ol></div>
+<div class="paragraph"><p>We also do not support incorrect Python programs.</p></div>
+<div class="paragraph"><p>The following things we do not support but are easily fixable by some more AG
+work or the expansion of our definitions:</p></div>
+<div class="olist arabic"><ol class="arabic">
+<li>
+<p>
+Function calls inside expressions, other than directly assigning the call
+   result to a variable.
+</p>
+</li>
+<li>
+<p>
+Determine the types of variables by their usage. In the <a href="#example1">first     example below</a> could be concluded that <tt>b</tt> is of type int. Where in
+    <a href="#example2">second example below</a> it could be concluded that it is a
+    string. However, see point 5. of the list above.
+</p>
+</li>
+</ol></div>
+<div class="listingblock">
+<a id="example1"></a>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.4
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>a <span style="color: #990000">=</span> <span style="color: #FF0000">"string"</span> <span style="color: #990000">*</span> b</tt></pre></div></div>
+<div class="listingblock">
+<a id="example2"></a>
+<div class="content"><!-- Generator: GNU source-highlight 3.1.4
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>a <span style="color: #990000">=</span> <span style="color: #FF0000">"string"</span> <span style="color: #990000">+</span> b</tt></pre></div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_used_lattice">7. The used lattice</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The lattice used is P(Var x P(Type)), where P represents the power set. The context integration results in the lattice Context x P(Var x P(Type)).
+We do a forward may analysis (uses unions) that calculates the least sets. Bottom (⊥) the empty set of types, Top (T) is &#8216;any
+type&#8217; and in between are all possible sets of types. Types in our case are only
+the basic types such as: <tt>int</tt>, <tt>float</tt>, <tt>long</tt>, <tt>complex</tt>, <tt>boolean</tt>, <tt>string</tt>
+and homogenous lists. To widen, we simply setwise join two sets of types.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mfp_minimal_fixed_point">8. MFP - Minimal Fixed Point</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>We started out by implementing a general minimal fixed point algorithm. Here
+is the code we used to test it against the examples given in the slides.
+The code was written before we started implementing function calls, therefore
+they contain <tt>undefined</tt> parameters.</p></div>
+<div class="paragraph"><p>Based on slide 29 of <a href="http://www.cs.uu.nl/docs/vakken/apa/02dataflow-intraprocedural.pdf">http://www.cs.uu.nl/docs/vakken/apa/02dataflow-intraprocedural.pdf</a></p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.4
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="font-weight: bold"><span style="color: #0000FF">data</span></span> <span style="color: #009900">Var</span> <span style="color: #990000">=</span> <span style="color: #009900">X</span> <span style="color: #990000">|</span> <span style="color: #009900">Y</span> <span style="color: #990000">|</span> <span style="color: #009900">Z</span> <span style="font-weight: bold"><span style="color: #0000FF">deriving</span></span> <span style="color: #990000">(</span><span style="color: #009900">Eq</span><span style="color: #990000">,</span> <span style="color: #009900">Ord</span><span style="color: #990000">,</span> <span style="color: #009900">Show</span><span style="color: #990000">)</span>
+
+<span style="font-weight: bold"><span style="color: #0000FF">instance</span></span> <span style="color: #009900">All</span> <span style="color: #009900">Var</span> <span style="font-weight: bold"><span style="color: #0000FF">where</span></span>
+  elems <span style="color: #990000">=</span> <span style="color: #990000">[</span><span style="color: #009900">X</span><span style="color: #990000">,</span> <span style="color: #009900">Y</span><span style="color: #990000">,</span> <span style="color: #009900">Z</span><span style="color: #990000">]</span>
+
+<span style="font-style: italic"><span style="color: #9A1900">-- Have to swap F because it's a backwards analysis</span></span>
+test1 <span style="color: #990000">::</span> M<span style="color: #990000">.</span><span style="color: #009900">Map</span> <span style="color: #009900">Integer</span> <span style="color: #990000">[</span><span style="color: #009900">Var</span><span style="color: #990000">]</span>
+test1 <span style="color: #990000">=</span> mfp <span style="color: #990000">(</span>map swap <span style="color: #990000">[(</span><span style="color: #993399">1</span><span style="color: #990000">,</span> <span style="color: #993399">2</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">2</span><span style="color: #990000">,</span> <span style="color: #993399">3</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">3</span><span style="color: #990000">,</span> <span style="color: #993399">4</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">4</span><span style="color: #990000">,</span> <span style="color: #993399">5</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">5</span><span style="color: #990000">,</span> <span style="color: #993399">6</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">5</span><span style="color: #990000">,</span> <span style="color: #993399">3</span><span style="color: #990000">)])</span> <span style="color: #990000">[</span><span style="color: #993399">1</span><span style="color: #990000">..</span><span style="color: #993399">6</span><span style="color: #990000">]</span> <span style="color: #990000">[</span><span style="color: #993399">6</span><span style="color: #990000">]</span> <span style="color: #990000">[</span><span style="color: #009900">Z</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>M<span style="color: #990000">.</span>fromList transfer<span style="color: #990000">)</span> undefined undefined
+   <span style="font-weight: bold"><span style="color: #0000FF">where</span></span> swap <span style="color: #990000">(</span>a<span style="color: #990000">,</span> b<span style="color: #990000">)</span> <span style="color: #990000">=</span> <span style="color: #990000">(</span>b<span style="color: #990000">,</span> a<span style="color: #990000">)</span>
+
+transfer <span style="color: #990000">=</span> <span style="color: #990000">[(</span><span style="color: #993399">1</span><span style="color: #990000">,</span> f1<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">2</span><span style="color: #990000">,</span> f2<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">3</span><span style="color: #990000">,</span> f3<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">4</span><span style="color: #990000">,</span> f4<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">5</span><span style="color: #990000">,</span> f5<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">6</span><span style="color: #990000">,</span> f6<span style="color: #990000">)]</span>
+
+f1 s <span style="color: #990000">=</span> nub <span style="color: #990000">$</span> <span style="color: #009900">X</span> <span style="color: #990000">:</span> <span style="color: #990000">(</span>s <span style="color: #990000">\\</span> <span style="color: #990000">[</span><span style="color: #009900">Y</span><span style="color: #990000">])</span>
+f2 s <span style="color: #990000">=</span> nub <span style="color: #990000">$</span> s <span style="color: #990000">\\</span> <span style="color: #990000">[</span><span style="color: #009900">Z</span><span style="color: #990000">]</span>
+f3 s <span style="color: #990000">=</span> nub <span style="color: #990000">$</span> <span style="color: #009900">X</span> <span style="color: #990000">:</span> s
+f4 s <span style="color: #990000">=</span> nub <span style="color: #990000">$</span> <span style="color: #990000">[</span><span style="color: #009900">X</span><span style="color: #990000">,</span> <span style="color: #009900">Z</span><span style="color: #990000">]</span> <span style="color: #990000">++</span> <span style="color: #990000">(</span>s <span style="color: #990000">\\</span> <span style="color: #990000">[</span><span style="color: #009900">Z</span><span style="color: #990000">])</span>
+f5 s <span style="color: #990000">=</span> nub <span style="color: #990000">$</span> <span style="color: #009900">X</span> <span style="color: #990000">:</span> <span style="color: #990000">(</span>s <span style="color: #990000">\\</span> <span style="color: #990000">[</span><span style="color: #009900">X</span><span style="color: #990000">])</span>
+f6 s <span style="color: #990000">=</span> nub <span style="color: #990000">$</span> s <span style="color: #990000">\\</span> <span style="color: #990000">[</span><span style="color: #009900">X</span><span style="color: #990000">]</span></tt></pre></div></div>
+<div class="paragraph"><p>Based on slide 74 of <a href="http://www.cs.uu.nl/docs/vakken/apa/02dataflow-intraprocedural.pdf">http://www.cs.uu.nl/docs/vakken/apa/02dataflow-intraprocedural.pdf</a></p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.4
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>test2 <span style="color: #990000">::</span> M<span style="color: #990000">.</span><span style="color: #009900">Map</span> <span style="color: #009900">Int</span> <span style="color: #990000">(</span>M<span style="color: #990000">.</span><span style="color: #009900">Map</span> <span style="color: #009900">Var</span> <span style="color: #009900">Constant</span><span style="color: #990000">)</span>
+test2 <span style="color: #990000">=</span> mfp <span style="color: #990000">[(</span><span style="color: #993399">2</span><span style="color: #990000">,</span> <span style="color: #993399">3</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">3</span><span style="color: #990000">,</span> <span style="color: #993399">4</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">4</span><span style="color: #990000">,</span> <span style="color: #993399">5</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">5</span><span style="color: #990000">,</span> <span style="color: #993399">6</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">6</span><span style="color: #990000">,</span> <span style="color: #993399">4</span><span style="color: #990000">)]</span> <span style="color: #990000">[</span><span style="color: #993399">2</span><span style="color: #990000">..</span><span style="color: #993399">6</span><span style="color: #990000">]</span> <span style="color: #990000">[</span><span style="color: #993399">2</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>M<span style="color: #990000">.</span>fromList <span style="color: #990000">[(</span><span style="color: #009900">X</span><span style="color: #990000">,</span> <span style="color: #009900">Top</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #009900">Y</span><span style="color: #990000">,</span> <span style="color: #009900">Top</span><span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #009900">Z</span><span style="color: #990000">,</span> <span style="color: #009900">Top</span><span style="color: #990000">)])</span>
+            <span style="color: #990000">(</span>M<span style="color: #990000">.</span>fromList transfer2<span style="color: #990000">)</span> undefined undefined
+
+transfer2 <span style="color: #990000">=</span> <span style="color: #990000">[(</span><span style="color: #993399">2</span><span style="color: #990000">,</span> g2<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">3</span><span style="color: #990000">,</span> g3<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">4</span><span style="color: #990000">,</span> g4<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">5</span><span style="color: #990000">,</span> g5<span style="color: #990000">),</span> <span style="color: #990000">(</span><span style="color: #993399">6</span><span style="color: #990000">,</span> g6<span style="color: #990000">)]</span>
+
+g2 <span style="color: #990000">=</span> M<span style="color: #990000">.</span>insert <span style="color: #009900">Y</span> <span style="color: #990000">(</span><span style="color: #009900">Constant</span> <span style="color: #993399">2</span><span style="color: #990000">)</span>
+g3 <span style="color: #990000">=</span> M<span style="color: #990000">.</span>insert <span style="color: #009900">Z</span> <span style="color: #990000">(</span><span style="color: #009900">Constant</span> <span style="color: #993399">1</span><span style="color: #990000">)</span>
+g4 <span style="color: #990000">=</span> id
+g5 s <span style="color: #990000">=</span> <span style="font-weight: bold"><span style="color: #0000FF">case</span></span> M<span style="color: #990000">.</span>lookup <span style="color: #009900">Z</span> s <span style="font-weight: bold"><span style="color: #0000FF">of</span></span>
+        <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #990000">(</span><span style="color: #009900">Constant</span> z<span style="color: #990000">))</span> <span style="color: #990000">-&gt;</span> <span style="font-weight: bold"><span style="color: #0000FF">case</span></span> M<span style="color: #990000">.</span>lookup <span style="color: #009900">Y</span> s <span style="font-weight: bold"><span style="color: #0000FF">of</span></span>
+            <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #990000">(</span><span style="color: #009900">Constant</span> y<span style="color: #990000">))</span> <span style="color: #990000">-&gt;</span> M<span style="color: #990000">.</span>insert <span style="color: #009900">Z</span> <span style="color: #990000">(</span><span style="color: #009900">Constant</span> <span style="color: #990000">$</span> z <span style="color: #990000">*</span> y<span style="color: #990000">)</span> s
+            <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #009900">Bottom</span><span style="color: #990000">)</span> <span style="color: #990000">-&gt;</span> error <span style="color: #FF0000">"Using uninitialized variable"</span>
+            <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #009900">Top</span><span style="color: #990000">)</span> <span style="color: #990000">-&gt;</span> M<span style="color: #990000">.</span>insert <span style="color: #009900">Z</span> <span style="color: #009900">Top</span> s
+        <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #009900">Top</span><span style="color: #990000">)</span> <span style="color: #990000">-&gt;</span> s
+        <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #009900">Bottom</span><span style="color: #990000">)</span> <span style="color: #990000">-&gt;</span> error <span style="color: #FF0000">"Using uninitialized variable"</span>
+g6 s <span style="color: #990000">=</span> <span style="font-weight: bold"><span style="color: #0000FF">case</span></span> M<span style="color: #990000">.</span>lookup <span style="color: #009900">X</span> s <span style="font-weight: bold"><span style="color: #0000FF">of</span></span>
+        <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #990000">(</span><span style="color: #009900">Constant</span> x<span style="color: #990000">))</span> <span style="color: #990000">-&gt;</span> M<span style="color: #990000">.</span>insert <span style="color: #009900">X</span> <span style="color: #990000">(</span><span style="color: #009900">Constant</span> <span style="color: #990000">$</span> x <span style="color: #990000">-</span> <span style="color: #993399">1</span><span style="color: #990000">)</span> s
+        <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #009900">Bottom</span><span style="color: #990000">)</span> <span style="color: #990000">-&gt;</span> error <span style="color: #FF0000">"Using uninitialized variable"</span>
+        <span style="color: #990000">(</span><span style="color: #009900">Just</span> <span style="color: #009900">Top</span><span style="color: #990000">)</span> <span style="color: #990000">-&gt;</span> s</tt></pre></div></div>
+<div class="sect2">
+<h3 id="_embellished_monotone_framework">8.1. Embellished monotone framework</h3>
+<div class="paragraph"><p>To use it as an embellished monotone framework, we added context: a map from
+callstrings to environments. To avoid poisoning and to ensure we are always
+using the right context, we have changed the MFP algorithm in the following
+way: instead of starting with every edge of the control flow graph in the
+worklist, we only insert the outgoing edges of the start node, with an empty
+callstring. We re-insert edges that need updating in the same way as the
+original algorithm, but include the callstring that the currently modified edge
+had so we ensure it is in the correct context. Only in the cases of a function
+call or a return, there we create a new environment with a new, longer
+callstring that we use for its outgoing edges. This also implies that we do not
+analyse dead code, because those edges will never be added.</p></div>
+<div class="paragraph"><p>We limit the length of the callstrings to ensure the analysis terminates.</p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_usage_and_graph_generation">9. Usage and Graph Generation</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>It might be possible that <tt>./softtype</tt> and <tt>./softtype-graph</tt> have lost their
+executable flag in the process of shipping. Please execute the following in the
+directory if that was the case.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>chmod +x softtype softtype-graph</tt></pre>
+</div></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>&gt;./softtype --help
+programoptions [OPTIONS] [ITEM]
+
+Common flags:
+  -o --output=FILE           Output file
+  -c --callstringlength=INT  max Length of the call string (not used atm)
+  -t --typeoutput=Graph      Graph|Plain|Debug
+  -? --help                  Display help message
+  -V --version               Print version information</tt></pre>
+</div></div>
+<div class="paragraph"><p>As mentioned before we can generate PDF files from a Python file. This can be
+done by the following command: <tt>./softtype-graph $testfile $pdf</tt> and to
+immediately open it (on OS X): <tt>./softtype-graph $testfile $pdf &amp;&amp; open $pdf</tt>.</p></div>
+<div class="paragraph"><p>In the graph the starting point is denoted by a node with a red circle.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">The lexer needs a trailing newline at the of the file for some reason, so
+      be sure to provide one!</td>
+</tr></table>
+</div>
+<div class="sect2">
+<h3 id="_examples">9.1. Examples</h3>
+<div class="paragraph"><p>Test files can be found in the <em>test</em> folder. Here are some examples.</p></div>
+<div class="paragraph"><p>The first part shows the AST, where each program is numbered (function calls
+get two: one for before entering the function, one after returning). In the
+examples below, they are the last arguments to the constructors. The second
+part of the output shows for each of these program points, for each variable
+in scope the set of types our analysis thinks it can have.</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.4
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>$ <span style="color: #990000">.</span>/softtype -t<span style="color: #990000">=</span>Plain test/functioncall<span style="color: #990000">.</span>py
+The AST<span style="color: #990000">:</span>
+IModule <span style="color: #990000">[</span>
+         IFun <span style="color: #FF0000">"foo"</span> <span style="color: #990000">[</span>IParam <span style="color: #FF0000">"a"</span> Nothing Nothing<span style="color: #990000">]</span> Nothing <span style="color: #990000">[</span>IAssign <span style="color: #990000">[</span>IVar <span style="color: #FF0000">"a"</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>IInt <span style="color: #993399">1</span> <span style="color: #FF0000">"1"</span><span style="color: #990000">)</span> <span style="color: #993399">1</span><span style="color: #990000">,</span>
+                                                          IReturn <span style="color: #990000">(</span>Just <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"a"</span><span style="color: #990000">))</span> <span style="color: #993399">2</span><span style="color: #990000">]</span> <span style="color: #993399">0</span><span style="color: #990000">,</span>
+         IAssign <span style="color: #990000">[</span>IVar <span style="color: #FF0000">"b"</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>IFloat <span style="color: #993399">0.0</span> <span style="color: #FF0000">"0.0"</span><span style="color: #990000">)</span> <span style="color: #993399">3</span><span style="color: #990000">,</span>
+         IAssign <span style="color: #990000">[</span>IVar <span style="color: #FF0000">"c"</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>ICall <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"foo"</span><span style="color: #990000">)</span> <span style="color: #990000">[</span>IArgExpr <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"b"</span><span style="color: #990000">)</span> <span style="color: #993399">7</span><span style="color: #990000">]</span> <span style="color: #993399">5</span> <span style="color: #993399">6</span><span style="color: #990000">)</span> <span style="color: #993399">4</span><span style="color: #990000">,</span>
+         IAssign <span style="color: #990000">[</span>IVar <span style="color: #FF0000">"c"</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>ICall <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"foo"</span><span style="color: #990000">)</span> <span style="color: #990000">[</span>IArgExpr <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"c"</span><span style="color: #990000">)</span> <span style="color: #993399">11</span><span style="color: #990000">]</span> <span style="color: #993399">9</span> <span style="color: #993399">10</span><span style="color: #990000">)</span> <span style="color: #993399">8</span>
+        <span style="color: #990000">]</span>
+Softtyped result<span style="color: #990000">:</span>
+<span style="color: #990000">[(</span><span style="color: #993399">0</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">])]),</span>
+                      <span style="color: #990000">([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">1</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">])]),</span>
+                     <span style="color: #990000">([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">2</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"rfoo"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),</span>
+                     <span style="color: #990000">([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"rfoo"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">3</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">4</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">5</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">6</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"rfoo"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">7</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">8</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">9</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">10</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"rfoo"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">11</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">]),(</span><span style="color: #FF0000">"c"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">5</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">9</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])])</span>
+<span style="color: #990000">]</span></tt></pre></div></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight 3.1.4
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>$ <span style="color: #990000">.</span>/softtype -t<span style="color: #990000">=</span>Plain test/indirection<span style="color: #990000">.</span>py                                                                                                                                                                                                                      <span style="color: #990000">(</span><span style="color: #993399">20</span><span style="color: #990000">:</span><span style="color: #993399">05</span><span style="color: #990000">:</span><span style="color: #993399">51</span> <span style="color: #993399">28</span>-<span style="color: #993399">08</span><span style="color: #990000">)</span>
+The AST<span style="color: #990000">:</span>
+IModule <span style="color: #990000">[</span>
+         IFun <span style="color: #FF0000">"f"</span> <span style="color: #990000">[]</span> Nothing <span style="color: #990000">[</span>IConditional <span style="color: #990000">[</span>IGuard <span style="color: #990000">(</span>IBool True<span style="color: #990000">)</span> <span style="color: #990000">[</span>IReturn <span style="color: #990000">(</span>Just <span style="color: #990000">(</span>IImaginary <span style="color: #993399">1.0</span> <span style="color: #FF0000">"1.0j"</span><span style="color: #990000">))</span> <span style="color: #993399">2</span><span style="color: #990000">]</span> <span style="color: #993399">1</span><span style="color: #990000">]</span>
+                                            <span style="color: #990000">[</span>IReturn <span style="color: #990000">(</span>Just <span style="color: #990000">(</span>IFloat <span style="color: #993399">1.0</span> <span style="color: #FF0000">"1.0"</span><span style="color: #990000">))</span> <span style="color: #993399">3</span><span style="color: #990000">]</span>
+                             <span style="color: #990000">]</span> <span style="color: #993399">0</span><span style="color: #990000">,</span>
+         IFun <span style="color: #FF0000">"g"</span> <span style="color: #990000">[]</span> Nothing <span style="color: #990000">[</span>IAssign <span style="color: #990000">[</span>IVar <span style="color: #FF0000">"a"</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>IInt <span style="color: #993399">0</span> <span style="color: #FF0000">"0"</span><span style="color: #990000">)</span> <span style="color: #993399">5</span><span style="color: #990000">,</span>
+                              IAssign <span style="color: #990000">[</span>IVar <span style="color: #FF0000">"b"</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>ICall <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"f"</span><span style="color: #990000">)</span> <span style="color: #990000">[]</span> <span style="color: #993399">7</span> <span style="color: #993399">8</span><span style="color: #990000">)</span> <span style="color: #993399">6</span><span style="color: #990000">,</span>
+                              IReturn <span style="color: #990000">(</span>Just <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"b"</span><span style="color: #990000">))</span> <span style="color: #993399">9</span>
+                             <span style="color: #990000">]</span> <span style="color: #993399">4</span><span style="color: #990000">,</span>
+         IAssign <span style="color: #990000">[</span>IVar <span style="color: #FF0000">"a"</span><span style="color: #990000">]</span> <span style="color: #990000">(</span>ICall <span style="color: #990000">(</span>IVar <span style="color: #FF0000">"g"</span><span style="color: #990000">)</span> <span style="color: #990000">[]</span> <span style="color: #993399">11</span> <span style="color: #993399">12</span><span style="color: #990000">)</span> <span style="color: #993399">10</span>
+        <span style="color: #990000">]</span>
+Softtyped result<span style="color: #990000">:</span>
+<span style="color: #990000">[(</span><span style="color: #993399">0</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">1</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">2</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"rf"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Complex<span style="color: #990000">])])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">3</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"rf"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">])])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">4</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">5</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">6</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">,</span>Type Complex<span style="color: #990000">])]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">7</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">])]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">8</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"rf"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">,</span>Type Complex<span style="color: #990000">])]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">9</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Int<span style="color: #990000">]),(</span><span style="color: #FF0000">"b"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">,</span>Type Complex<span style="color: #990000">]),(</span><span style="color: #FF0000">"rg"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">,</span>Type Complex<span style="color: #990000">])]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">10</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"a"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">,</span>Type Complex<span style="color: #990000">])]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">11</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])]),</span>
+<span style="color: #990000">(</span><span style="color: #993399">12</span><span style="color: #990000">,[([],</span>fromList <span style="color: #990000">[(</span><span style="color: #FF0000">"rg"</span><span style="color: #990000">,</span>fromList <span style="color: #990000">[</span>Type Float<span style="color: #990000">,</span>Type Complex<span style="color: #990000">])]),([</span><span style="color: #993399">11</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[]),([</span><span style="color: #993399">11</span><span style="color: #990000">,</span><span style="color: #993399">7</span><span style="color: #990000">],</span>fromList <span style="color: #990000">[])])</span>
+<span style="color: #990000">]</span></tt></pre></div></div>
+</div>
+<div class="sect2">
+<h3 id="_graphs">9.2. Graphs</h3>
+<div class="paragraph"><p>We can also generate images of the call graphs. Examples:</p></div>
+<div class="paragraph"><p><span class="image">
+<a class="image" href="fib.png">
+<img src="fib.png" alt="Control flow of fib.py" />
+</a>
+</span></p></div>
+<div class="paragraph"><p>We can also annotate the graphs with the context in each node:</p></div>
+<div class="paragraph"><div class="title">Annotated flow of functioncall.py</div><p><span class="image">
+<a class="image" href="functioncall.png">
+<img src="functioncall.png" alt="Annotated flow of functioncall.py" width="400" />
+</a>
+</span></p></div>
+<div class="paragraph"><div class="title">Annotated flow of indirection.py</div><p><span class="image">
+<a class="image" href="indirection.png">
+<img src="indirection.png" alt="Annotated flow of indirection.py" width="400" />
+</a>
+</span></p></div>
+<div class="paragraph"><div class="title">Annotated flow of conditional.py</div><p><span class="image">
+<a class="image" href="conditional.png">
+<img src="conditional.png" alt="Annotated flow of conditional.py" width="400" />
+</a>
+</span></p></div>
+<div class="paragraph"><div class="title">Annotated flow of while.py</div><p><span class="image">
+<a class="image" href="while.png">
+<img src="while.png" alt="Annotated flow of while.py" width="400" />
+</a>
+</span></p></div>
+<div class="paragraph"><div class="title">Annotated flow of print.py</div><p><span class="image">
+<a class="image" href="print.png">
+<img src="print.png" alt="Annotated flow of print.py" />
+</a>
+</span></p></div>
+<div class="paragraph"><div class="title">Annotated flow of loop.py</div><p><span class="image">
+<a class="image" href="loop.png">
+<img src="loop.png" alt="Annotated flow of print.py" width="400" />
+</a>
+</span></p></div>
+<div class="paragraph"><p>See also fib.pdf and fac.pdf for larger examples.</p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_notes_on_the_language">10. Notes on the language</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+Python does not allow shadowing, so assigning to a variable puts the variable
+  in local scope. You cannot use the same variable in the expression then.
+  So this means that we have to discard all inherited information on the
+  variable when it gets assigned to.
+</p>
+</li>
+<li>
+<p>
+When we encounter an expression, we use all the possible types of the
+  arguments to look up what the type of the result can be. It is possible that
+  this can lead to impossible combinations, which are then discarded. For
+  example, multiplication of strings with integers is allowed, while
+  multiplication of strings with floats isn&#8217;t. If <tt>a</tt> is known to be a <tt>String</tt>
+  and <tt>b</tt> either an <tt>Int</tt> or a <tt>Float</tt>, then <tt>a * b</tt> will be a <tt>String</tt> (it
+  assumes <tt>b</tt> has type integer here). It would be possible to try to conclude
+  that certain types are impossible if they yield no valid combinations in an
+  expressions, but we have not implemented this.
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2011-09-01 01:32:15 CEST
+</div>
+</div>
+</body>
+</html>

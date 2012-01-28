@@ -1,0 +1,162 @@
+-------------------------------------------------------------------------------
+-- Module    :  Analysis.Monotone
+-- Copyright :  (c) 2011 Marcelo Sousa, Alessandro Vermeulen, Thijs Alkemade   
+module Analysis.Monotone where
+
+import qualified Data.Set as S
+import Prelude 
+import Data.List 
+import qualified Data.Map as Map 
+import Data.Maybe (fromJust)
+import Debug.Trace
+
+import IPython.AST (Label, defaultStartLabel)
+import IPython.Typing (Type, fromJustWError, Context)
+import Analysis.Lattice
+  
+-- We need the different flow types here to be able to make the distinction on
+-- which info to retain on function call and so on (scoping stuff)
+-- Maybe that in the end it plays out that due to the python rules with side-
+-- effect it isn't that big a deal.
+data Flow  =  InterFlow ( Label , Label ) -- Between functions
+           |  IntraFlow ( Label , Label ) -- Inside `normal'
+  deriving (Eq, Show)
+  
+type IntraFlow   = [ Flow ]
+
+-- | The list of allowed interflows through the program:
+--      call-site , enter , exit , return
+type InterFlow   = [ ( Label , Label , Label , Label )]
+
+type ControlFlow = [ Flow ]
+
+data TransferFunction c e =  Unary  ((c, e) -> (c, e))
+                          |  Binary ((c, e) -> ((c, e) -> (c, e)))
+
+data MonotoneSettings = MonotoneSettings { callStringLength :: Int }
+
+defaultSettings = MonotoneSettings { callStringLength = 50 }
+
+data Constant = Constant Integer | Top | Bottom deriving (Eq, Ord, Show)
+
+----
+
+createFlow :: ((Label, Label) -> Flow) -> [Label] -> [Label] -> ControlFlow
+createFlow f ls rs = [f (l , r) | l <- ls, r <- rs, l /= defaultStartLabel]
+
+type ELattice s = Map.Map Label (Map.Map Context s)
+
+{-
+ - http://www.cs.uu.nl/docs/vakken/apa/02dataflow-intraprocedural.pdf slide 82
+ - allLabels: allLabels
+ - extremalLabels: eLabels
+ - extremalValue: eValue
+ - mapping: transFunc
+ -}
+type WorkList = [((Label, Context), (Label, Context))]
+
+mfp :: (Lattice s, Show s) => MonotoneSettings -> Label -> ControlFlow -> InterFlow -> [Label] -> [Label] -> s -> Map.Map Label (TransferFunction Context s) -> (ELattice s, ELattice s)
+mfp settings startLabel controlFlow interFlow allLabels eLabels eValue transFunc = traceShow controlFlow $
+	  let initContext = []
+	      initMap = iMap allLabels eLabels eValue initContext
+	      initWL  = successors startLabel initContext controlFlow interFlow
+	      (wList, preMap) = mfp_iteration allLabels eLabels eValue initWL controlFlow interFlow initMap transFunc
+	      wList' = foldr (getContexts $ callStringLength settings) Map.empty wList 
+	  in (trace ("\nwList: " ++ show initWL ++ "\nwList': " ++ show wList' ++ "\n") $ preMap,  preMap) -- posmfp interFlow transFunc wList' preMap)
+
+-- Find all the context that were created
+getContexts :: Int -> ((Label, Context), (Label, Context)) -> Map.Map Label [Context] -> Map.Map Label [Context]
+getContexts i ((l,c),(l',c')) r = let left = case Map.lookup l r of
+										                	Nothing -> Map.insert l [c] r
+										                	Just k  -> if length k > i then r else Map.insert l (nub (c:k)) r
+                                      right = case Map.lookup l' r of
+															    Nothing -> Map.insert l' [c'] r
+															    Just k  -> if length k > i then r else Map.insert l' (nub (c':k)) r
+										  in Map.unionWith (\x y -> take i $ nub (x ++ y)) left right
+
+-- The final step in the mfp algorithm: apply all the transfer functions once more (but use the right context)
+posmfp :: (Lattice s, Show s) => InterFlow -> Map.Map Label (TransferFunction Context s) -> Map.Map Label [Context] -> ELattice s -> ELattice s
+posmfp iFlow trans wLF lat = Map.mapWithKey (\l mc -> applyTF l iFlow lat (fromJustWError "end" $ Map.lookup l trans) mc (fromJustWError "end2" $ Map.lookup l wLF)) lat
+
+applyTF :: (Lattice s, Show s) => Label -> InterFlow -> ELattice s -> TransferFunction Context s -> Map.Map Context s -> [Context] -> Map.Map Context s
+applyTF l iFlow eLat f m [] = m
+applyTF l iFlow eLat tf@(Binary f) m (c1:t) = let pc = findEntryPoint l iFlow
+                                                  pLat = fromJustWError "3" $ Map.lookup c1 (fromJustWError "33" $ Map.lookup pc eLat) 
+                                              in applyTF l iFlow eLat tf (Map.update (\lat -> Just $ snd $ f (c1,pLat) (c1,lat)) c1 m) t
+applyTF l iFlow eLat tf@(Unary f)  m (c1:t) = applyTF l iFlow eLat tf (Map.update (\lat -> Just $ snd $ f (c1,lat)) c1 m) t
+
+{-
+ - allLabels: all program points
+ - eLabels: the extremal labels
+ - eValue: the extremal value
+ - wList: the queue of 'edges' (equations) still needing to be checked
+ - cFlow: the control flow
+ - iFlow: the interflow
+ - eLat: the complete lattice
+ - transFunc: maps labels to transfer functions
+ -}
+mfp_iteration :: (Lattice s, Show s) => [Label] -> [Label] -> s -> WorkList -> ControlFlow -> InterFlow -> ELattice s -> Map.Map Label (TransferFunction Context s) -> (WorkList, ELattice s)
+mfp_iteration allLabels eLabels eValue wList cFlow iFlow eLat transFunc = 
+								if null wList
+                                then (wList, eLat)
+								else let ((l,c), (l',c')) = head wList
+								         tf = fromJustWError ("mfp_iteration: Transfer function for not found for " ++ show l) $ Map.lookup l transFunc
+								         eLat' = updateELattice allLabels eLabels eValue eLat c' -- if it's a call add new column to matrix
+								         lat   = fromJustWError "1" $ Map.lookup c  (fromJustWError "11" $ Map.lookup l  eLat')             
+								         lat'  = fromJustWError "2" $ Map.lookup c' (fromJustWError ("22 " ++ show l' ++ " " ++ show eLat') $ Map.lookup l' eLat')
+								         (nc, nlat) = case tf of
+									                        (Unary f)  -> f (c, lat)
+									                        (Binary f) -> let pc = findEntryPoint l iFlow
+									                                          pLat = fromJustWError "3" $ Map.lookup c (fromJustWError "33" $ Map.lookup pc eLat') 
+									                                      in trace "iteration" $ f (c, pLat) (c, lat)									
+									  in if nlat ⊑ lat'
+									      then let (wList', fLat) = mfp_iteration allLabels eLabels eValue (tail wList) cFlow iFlow eLat' transFunc
+									           in (nub (wList ++ wList'), fLat) 
+									      else let nwList = successors l' c' cFlow iFlow
+									               (wList', fLat) = mfp_iteration allLabels eLabels eValue (tail wList ++ nwList) cFlow iFlow (Map.update (\m -> Just $ Map.insert c' (lat' ⊔ nlat) m) l' eLat') transFunc
+										        in (nub (wList ++ wList'), fLat) 
+	
+findEntryPoint :: Label -> InterFlow -> Label
+findEntryPoint l [] = error "Couldn't find entry point"
+findEntryPoint l ((x,_,_,l'):t) = if l == l'
+	                               then x
+	                               else findEntryPoint l t	 	
+	
+updateELattice :: (Lattice s, Show s) => [Label] -> [Label] -> s -> ELattice s -> Context -> ELattice s
+updateELattice allLabels eLabels eValue imap c = case Map.lookup (head allLabels) imap of
+																			 Nothing -> error "Error updating Lattice"
+																			 Just m -> case Map.lookup c m of
+																								 Nothing -> Map.unionWith (Map.union) imap $ iMap allLabels eLabels eValue c																								            
+																								 Just x  -> imap
+
+successors :: Label -> Context -> ControlFlow -> InterFlow -> WorkList
+successors b c []                     _     = []
+successors b c ((InterFlow (l,l')):r) iFlow = if b == l
+	                                           then if isCall (l,l') iFlow
+		                                             then ((l,c),(l',c++[l])):(successors b c r iFlow)
+		                                             else if isReturn (l,l') iFlow
+			                                               then ((l,c),(l',init c)):(successors b c r iFlow)
+			                                               else error "Has to return something"
+	                                           else successors b c r iFlow
+successors b c ((IntraFlow (l,l')):r) iFlow = if b == l
+	                                           then ((l,c),(l',c)):(successors b c r iFlow)
+	                                           else successors b c r iFlow
+
+isCall :: (Label, Label) -> InterFlow -> Bool
+isCall (l,l') []  = False
+isCall (l,l') ((l1,l1',_,_):t) = (l1 == l1 && l' == l1') || isCall (l,l') t
+
+isReturn :: (Label, Label) -> InterFlow -> Bool
+isReturn (l,l') []  = False
+isReturn (l,l') ((_,_,l1,l1'):t) = (l1 == l1 && l' == l1') || isReturn (l,l') t
+
+
+iMap :: (Lattice s, Show s) => [Label] -> [Label] -> s -> Context -> ELattice s
+iMap allLabels eLabels eValue c = Map.fromList $ zip eLabels (repeat (Map.singleton c eValue)) ++ zip (allLabels \\ eLabels) (repeat (Map.singleton c bottom))
+																			
+applyIntraTF :: (Lattice s, Show s) => TransferFunction Context s -> (Context, s) -> (Context, s)
+applyIntraTF (Unary  f) (c,lat) = f (c,lat)
+applyIntraTF (Binary f) (c,lat) = error "Shouldn't be a binary function"
+											
+reachable from (InterFlow (from', _)) = from == from'
+reachable from (IntraFlow (from', _)) = from == from'

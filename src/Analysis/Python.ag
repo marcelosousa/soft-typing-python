@@ -1,0 +1,334 @@
+{
+-------------------------------------------------------------------------------
+-- Module    :  Analysis.Python
+-- Copyright :  (c) 2011 Marcelo Sousa, Alessandro Vermeulen, Thijs Alkemade   
+}
+
+optpragmas {
+{-# LANGUAGE TypeSynonymInstances #-}
+}
+
+module{Analysis.Python}{}{}
+
+imports{
+import Data.Map as Map hiding (map)
+import Data.Set as Set hiding (map)
+import Data.List (nub)
+import Data.Maybe (fromJust, fromMaybe) 
+
+import Analysis.Monotone
+import IPython.Typing
+import Debug.Trace
+import IPython.AST
+}
+
+include "../IPython/AST.ag"
+
+------------------------------------------------------	
+--- Labeling
+{
+nextUnique n = (n+1,n)
+}    
+
+set Labelled = ISuite IStatement IGuards IGuard IHandlers IHandler IExprs IExpr IArgs IArgument IExceptClauseType IExceptClauseType2 MybExpr PairExprMybExpr IParams IParameter IContext IDecorators IDecorator
+
+--- Label       		                	    
+attr Labelled
+	chn counter :: {Label}
+
+--- Labels	
+attr IModule Labelled
+	syn labels  use {++} {[]} :: {[Label]}
+
+attr IModule Labelled
+  syn startLabel :: { Maybe Label }
+
+sem IModule
+	| IModule stats.counter = defaultStartLabel+1
+	
+sem IStatement
+	| * - IConditional - IFor - IClass - IDecorated - ITry - IRaise - IWith - IDelete - IStmtExpr - IAssert - IExec
+					   loc.label  :: uniqueref counter
+
+sem IStatement
+    | IConditional     lhs.labels = @guards.labels ++ @else.labels
+    | IWhile           lhs.labels = @loc.label:(@body.labels ++ @else.labels)
+    | IFun             lhs.labels = @loc.label:(@body.labels)
+    | IReturn          lhs.labels = @loc.label:(@expr.labels)
+    | IAssign          lhs.labels = @loc.label:(@expr.labels)
+	| * - IWhile - IConditional - IFor - IClass - IDecorated - ITry - IRaise - IWith - IDelete - IStmtExpr - IAssert - IExec - IFun	- IReturn - IAssign			
+					   lhs.labels = [@loc.label]
+	
+sem IStatement
+	| IImport     	   lhs.self = IImport @items.self @loc.label
+	| IFromImport 	   lhs.self = IFromImport @modul.self @items.self @loc.label
+	| IFun 		  	   lhs.self = IFun @name @args.self @result.self @body.self @loc.label
+	| IAssign	  	   lhs.self = IAssign @to.self @expr.self @loc.label
+	| IAugmentedAssign lhs.self = IAugmentedAssign @to.self @op.self @expr.self @loc.label
+	| IReturn 		   lhs.self = IReturn @expr.self @loc.label
+	| IPass			   lhs.self = IPass @loc.label
+	| IBreak		   lhs.self = IBreak @loc.label
+	| IContinue		   lhs.self = IContinue @loc.label
+	| IGlobal		   lhs.self = IGlobal @vars.self @loc.label
+	| INonLocal		   lhs.self = INonLocal @vars.self @loc.label
+	| IPrint 		   lhs.self = IPrint @chevron @exprs.self @trailcomma @loc.label
+	| IWhile           lhs.self = IWhile @cond.self @body.self @else.self @loc.label
+
+sem IArgument
+	| IArgExpr		   lhs.self = IArgExpr @expr.self @loc.label
+                       lhs.labels = [@loc.label]
+                       loc.label :: uniqueref counter
+
+sem IGuard
+    | IGuard           lhs.self   = IGuard @cond.self @body.self @loc.label
+                       lhs.labels = @loc.label:(@body.labels)
+                       loc.label :: uniqueref counter					
+					   
+sem IExpr
+	| ICall			   lhs.self  = ICall @call_fun.self @call_args.self @loc.label @loc.return
+					   lhs.labels = @loc.label:(@loc.return:(@call_args.labels))
+					   loc.label :: uniqueref counter                              
+					   loc.return :: uniqueref counter
+
+------------------------------------------------------	
+--- Control Flow
+set ControlFlowD = IModule ISuite IStatement IExprs IExpr IGuards IGuard MybExpr IArgs IArgument
+
+attr ControlFlowD
+	syn controlFlow use {++} {[]} :: {ControlFlow}
+	chn funName   :: {String}
+	chn retLabels :: {Map String [Label]}
+	chn callLabels :: {Map String [(Label, Label)]}
+	chn funLabels :: {Map String Label}
+	chn funParams :: {Map String [Var]}
+	inh downLabel :: {[Label]}
+	syn upLabel   :: {[Label]}
+	inh downGLabel :: {[Label]}
+	syn upGLabel  :: {[Label]}
+
+sem IModule
+	| IModule stats.downLabel = [defaultStartLabel]
+			  stats.funName   = "Global"
+			  stats.retLabels = Map.empty
+			  stats.funLabels = Map.empty
+			  stats.funParams = Map.empty
+			  stats.callLabels = Map.empty
+			  stats.downGLabel = []
+	
+sem ISuite IExprs IArgs
+	| Cons    hd.downLabel  = @lhs.downLabel
+	          hd.downGLabel = @lhs.downGLabel
+			  tl.downLabel  = @hd.upLabel
+			  tl.downGLabel = @hd.upGLabel
+			  lhs.startLabel = maybe @tl.startLabel (\_ -> @hd.startLabel) @hd.startLabel
+	| Nil     lhs.upLabel  = @lhs.downLabel
+	          lhs.upGLabel = @lhs.downGLabel
+	          lhs.startLabel = Nothing
+
+sem IGuards
+	| Cons    hd.downLabel = @lhs.downLabel
+	          hd.downGLabel = @lhs.downGLabel
+			  tl.downLabel = @hd.upLabel
+			  tl.downGLabel = @hd.upGLabel
+	| Nil     lhs.upLabel  = @lhs.downLabel
+	          lhs.upGLabel = @lhs.downGLabel
+	
+sem IGuard
+	| IGuard lhs.controlFlow = case @lhs.downGLabel of
+	                               [] -> createFlow IntraFlow @lhs.downLabel [@loc.label] ++ @body.controlFlow
+	                               g  -> createFlow IntraFlow g              [@loc.label] ++ @body.controlFlow
+	         lhs.upGLabel   = [@loc.label] -- @loc.label:(@lhs.downGLabel)
+			 body.downLabel = [@loc.label] -- correct
+			 lhs.upLabel    = case @lhs.downGLabel of
+			                       [] -> @body.upLabel
+			                       g  -> @body.upLabel ++ @lhs.downLabel
+	
+sem IStatement
+-- IAssign 
+	| IAssign lhs.controlFlow = createFlow IntraFlow @expr.upLabel [@loc.label] ++ @expr.controlFlow
+              lhs.startLabel = case @expr.startLabel of
+                                    Nothing -> Just @loc.label
+                                    Just x  -> Just x
+			  expr.downLabel = @lhs.downLabel
+
+-- IConditional does not consider the control flow of the condition
+	| IConditional lhs.controlFlow  = @guards.controlFlow ++ @else.controlFlow
+				   guards.downLabel = @lhs.downLabel
+				   guards.downGLabel = []
+				   else.downLabel   = @guards.upGLabel
+				   lhs.upLabel      = @guards.upLabel ++ @else.upLabel
+
+-- IWhile does not consider the control flow of the condition
+	| IWhile lhs.controlFlow = createFlow IntraFlow @loc.exitIWhile [@loc.label] ++ @body.controlFlow ++ @else.controlFlow
+			 body.downLabel = [@loc.label]
+			 else.downLabel = [@loc.label]
+			 lhs.upLabel    = @else.upLabel
+			 loc.exitIWhile = nub $ @lhs.downLabel ++ @body.upLabel
+-- IFun			
+	| IFun   lhs.controlFlow = let call = snd $ unzip $ maybe [] id (Map.lookup @name @body.callLabels)
+	                               ret = maybe [] id (Map.lookup @name @body.retLabels) 
+	                           in nub $ createFlow InterFlow ret call ++ @body.controlFlow			
+			 lhs.upLabel = @lhs.downLabel
+			 body.downLabel = [@loc.label]
+			 body.funName = @name
+			 lhs.funName = @lhs.funName
+			 body.funLabels = Map.insert @name @loc.label @lhs.funLabels
+			 lhs.funLabels = Map.insert @name @loc.label @lhs.funLabels
+			 body.funParams = Map.insert @name (getVarParams @args.self) @lhs.funParams
+			 lhs.funParams = Map.insert @name (getVarParams @args.self) @lhs.funParams
+			 body.retLabels = case Map.lookup @name @lhs.retLabels of
+			                       Nothing -> @lhs.retLabels
+			                       Just x  -> Map.delete @name @lhs.retLabels
+			 lhs.retLabels = case Map.lookup @name @body.retLabels of
+								Nothing -> case @body.upLabel of
+													[] -> Map.insert @name [@loc.label] @lhs.retLabels
+													l  -> Map.insert @name l 			@lhs.retLabels
+								Just rl  -> case @body.upLabel of
+													[] -> Map.insert @name rl @lhs.retLabels
+													l  -> Map.insert @name (nub (l ++ rl)) @lhs.retLabels
+			 lhs.startLabel = Nothing
+-- IReturn			
+	| IReturn lhs.controlFlow = (createFlow IntraFlow @expr.upLabel [@loc.label]) ++ @expr.controlFlow
+			  lhs.retLabels   = Map.insertWith (++) @lhs.funName [@loc.label] @lhs.retLabels
+			  lhs.upLabel     = [] -- before it was [@loc.label]
+			  expr.downLabel  = @lhs.downLabel 
+	| * - IWhile - IConditional - IFor - IClass - IDecorated - ITry - IRaise - IWith - IDelete - IStmtExpr - IAssert - IExec - IFun - IReturn
+			 lhs.upLabel   = [@loc.label] 
+			 loc.startLabel = Just @loc.label
+    | IStmtExpr	lhs.startLabel = case @expr.startLabel of
+                                    Just _ -> @expr.startLabel
+    | IPrint  lhs.controlFlow = createFlow IntraFlow @exprs.upLabel [@loc.label] ++ @exprs.controlFlow
+
+sem IExpr
+	| ICall  call_args.downLabel = @lhs.downLabel
+	         lhs.callLabels = Map.insertWith (++) (fname @call_fun.self) [(@loc.label, @loc.return)] @lhs.callLabels
+	         lhs.controlFlow = let funame = fname @call_fun.self
+							   in case Map.lookup funame @lhs.funLabels of
+									Nothing -> error "Function not defined"
+									Just l  -> let funame = fname @call_fun.self
+										       in if (funame == @lhs.funName) 
+										          then (InterFlow (@loc.label, l)):(createFlow IntraFlow @call_args.upLabel [@loc.label] ++ @call_fun.controlFlow ++ @call_args.controlFlow)
+									              else case Map.lookup funame @lhs.retLabels of
+															Nothing -> error $ "Can't find retLabels for " ++ show funame ++ show @lhs.retLabels
+															Just r  -> (InterFlow (@loc.label, l)):(createFlow IntraFlow @call_args.upLabel [@loc.label] ++ createFlow InterFlow r [@loc.return] ++ @call_fun.controlFlow ++ @call_args.controlFlow)												 
+			 lhs.upLabel = [@loc.return]
+             lhs.startLabel = case @call_args.startLabel of
+                                   Nothing -> Just @loc.label
+                                   Just x  -> Just x
+    | * - ICall	lhs.startLabel = Nothing
+                lhs.upLabel = @lhs.downLabel
+
+sem IArgument
+	| IArgExpr lhs.controlFlow = createFlow IntraFlow @lhs.downLabel [@loc.label]
+	           lhs.startLabel = Just @loc.label
+	           lhs.upLabel = [@loc.label]
+
+------------------------------------------------------	
+--- Inter Flow
+
+set InterFlowD = IModule ISuite IStatement IExprs IExpr IGuards IGuard MybExpr IArgs IArgument
+
+attr InterFlowD
+	syn interFlow use {++} {[]} :: {InterFlow}
+
+sem IStatement
+	| IFun  lhs.interFlow = let l = maybe [] id (Map.lookup @name @body.callLabels)
+	                            ret = maybe [] id (Map.lookup @name @body.retLabels) 
+	                        in nub $ (foldr (++) [] (map (\(c,ce) -> createInterFlow c @loc.label ret ce) l)) ++ @body.interFlow
+
+sem IExpr
+	| ICall  lhs.interFlow = let funame = fname @call_fun.self
+							 in if (funame == @lhs.funName) then []
+							    else case Map.lookup funame @lhs.funLabels of
+							  	          Nothing -> error "Function not defined"
+							  	          Just l  -> case Map.lookup funame @lhs.retLabels of
+							            				Nothing -> error "Shouldn't happen bla"
+							            				Just r  -> createInterFlow @loc.label l r @loc.return	        
+------------------------------------------------------
+--- Transfer Functions
+--- The Binary function is generated on the Call as it was suppose to.
+
+set TransFunD = IModule ISuite IStatement IExprs IExpr IGuards IGuard MybExpr IArgs IArgument
+
+attr TransFunD
+	syn transFunctions use {`Map.union`} {Map.empty} :: {Map.Map Label (TransferFunction Context Environment)}
+	
+sem IStatement
+-- IAssign simple assignment to one variable (what about assignments to function calls?)
+	| IAssign lhs.transFunctions = let tf = Unary $ \(c, env) -> (c, Map.insert @loc.varName (typesOf env @expr.self) (removeRet @expr.self env))
+								   in  Map.insert @loc.label tf @expr.transFunctions
+			  loc.varName = varOf @to.self					
+	| IWhile  lhs.transFunctions = let transBodyElse = Map.union @body.transFunctions @else.transFunctions	                                   
+	                               in Map.insert @loc.label (Unary id) transBodyElse
+	| IFun    lhs.transFunctions = 	Map.insert @loc.label (Unary id) @body.transFunctions -- no transfer function for args. I believe this is correct
+		                                                                  
+	| IReturn lhs.transFunctions = let tf = case @expr.self of
+	                                             Nothing -> Unary $ \(c, env) -> (init c, Map.insert @loc.rVar (prevTypesOf' env @loc.rVar) env)	                                               
+	                                             Just e -> Unary $ \(c, env) -> (init c, Map.insert @loc.rVar (Set.union (prevTypesOf env @loc.rVar) (typesOf env e)) env)
+								   in Map.singleton @loc.label tf
+	          loc.rVar = "r"++(@lhs.funName)
+	| IPrint  lhs.transFunctions = Map.singleton @loc.label $ Unary id
+
+sem IExpr
+	| ICall   lhs.transFunctions = let funame = fname @call_fun.self
+	                                   funargs  = fromJustWError ("Function not defined " ++ show funame) $ Map.lookup funame @lhs.funParams
+	                                   ltyargs = \env -> getArgsTy @call_args.self env
+	                                   margsty = \env -> Map.fromList $ zip funargs (ltyargs env)
+	                                   ctf = Unary $ \(c, env) -> (c ++ [@loc.label], Map.union (margsty env) env)
+								   in Map.insert @loc.label ctf $ Map.insert @loc.return (Binary $ \(c, env) (cf, envf) -> (cf, filterOut env envf ("r"++funame))) $ @call_args.transFunctions	
+								
+sem IGuard
+	| IGuard lhs.transFunctions = Map.insert @loc.label (Unary id) @body.transFunctions
+								
+sem IArgument
+	| IArgExpr lhs.transFunctions = Map.singleton @loc.label $ Unary id
+
+								
+{
+-- Utility functions
+removeRet :: IExpr -> Environment -> Environment
+removeRet (ICall (IVar x) _ _ _) env = Map.delete ("r"++x) env
+removeRet _                      env = env
+
+filterOut :: Environment -> Environment -> String -> Environment
+filterOut fEnv pEnv rfunName = Map.insert rfunName (fromJustWError "filterOut" $ Map.lookup rfunName pEnv) fEnv
+
+getVarParams :: IParams -> [Var]
+getVarParams = map getVarParam
+
+getVarParam :: IParameter -> Var
+getVarParam (IParam      name _ _) = name
+getVarParam (IVarArgsPos name _)   = name
+getVarParam IParamNotSupported     = "Not Supported"
+
+getArgsTy :: IArgs -> Environment -> [Set.Set Type]
+getArgsTy args env = map (\arg -> getArgTy arg env) args
+
+getArgTy :: IArgument -> Environment -> Set.Set Type
+getArgTy (IArgExpr       expr _) env = typesOf env expr
+getArgTy (IArgVarArgsPos expr)   env = typesOf env expr
+getArgTy IArgNotSupported        env = Set.empty
+
+prevTypesOf' :: Environment -> String -> Set.Set Type
+prevTypesOf' env var = fromMaybe (Set.singleton None) $ Map.lookup var env
+
+prevTypesOf :: Environment -> String -> Set.Set Type
+prevTypesOf env var = fromMaybe Set.empty $ Map.lookup var env
+
+createFlow :: ((Label, Label) -> Flow) -> [Label] -> [Label] -> ControlFlow
+createFlow f ls rs = [f (l , r) | l <- ls, r <- rs, l /= defaultStartLabel]
+
+createInterFlow :: Label -> Label -> [Label] -> Label -> InterFlow
+createInterFlow call enter exits return = map (\exit -> (call, enter, exit, return)) exits
+ 
+fname :: IExpr -> String
+fname (IVar x) = x
+fname _        = error "fname: Not supported ICall"
+
+varOf :: IExprs -> String
+varOf ((IVar x) : _) = x
+varOf x              = error $ "Unsupported: " ++ show x
+
+varOf_ :: IExpr -> String
+varOf_ (IVar x) = x
+}

@@ -1,0 +1,348 @@
+Soft-typing of Python
+=====================
+:language: bash
+
+NOTE: Look for the README.html file in the same folder, it contains a more
+      readable variant of this text file.
+
+Authors
+-------
+1. Thijs Alkemade (3285960)
+2. Alessandro Vermeulen (3242919)
+3. Marcelo Sousa (3535592)
+
+NOTE: Building the HTML version of this document requires `asciidoc` with either
+      pygments or gnu source highlight. asciidoc can be easily installed from 
+      source.
+
+Installing
+----------
+Aside from the default Haskell platform packages +base+ and +containers+, we
+rely on +pretty+ for pretty-printing and +language-python+ to parse Python
+source code. All of these can be installed using cabal. The code itself can
+be compiled with the command:
+
+[source]
+----
+cabal configure && cabal build.
+----
+
+Generating the Graphs requires
+http://www.graphviz.org/Download_macos.php[graphviz].
+
+The analysis
+------------
+The goal of the analysis is to find for each program-point in the program which
+variables are in scope and what their possible types are at that point. This is
+done using forward analysis.
+
+
+General Architecture
+--------------------
+
+We are using the 'Language-Python' module to parse the Python source. The
+generated AST is then transformed into our own AST which contains a subset of
+the elements provided by 'Language-Python' and should indicate what we
+support. This AST is annotated with the labels we generate for each element
+where applicable. We generate labels for each statement and two labels for
+a function call. Labeling, creating the control flow graph, and creating the
+conditions - or transfer functions - is done by the AG system. Most of this
+can be found in +src/IPython/Python.ag+. Mostly the attribute names speak for
+themselves. The AST definition can be found in +src/IPython/AST.ag+.
+
+We store two labels per function call because this makes it easier to support
+function calls inside expressions. It would be nasty to have one label for
+each statement but to have two for an assignment if it would only contain a
+function call and otherwise not support it.
+
+The generated information is used in `MinimalFixPoint` to determine for each
+label the set of possible types for each variable that is in scope. The
+'Analysis' directory contains definitions for use by the Monotone Framework
+and the MFP Analysis algorithm. At first we had a general MFP algorithm, but
+we have specialised it for our use and adapted it to be an embellished monotone
+framework.
+
+
+Things we support
+-----------------
+
+1. Rendering graphs (generate a pdf by using `./softtype-graph $testfile $pdf`)
+
+We support the following features of the Python language:
+
+1. If-constructs
+2. While-construct
+3. Function calls
+4. The following types: +int+, +float+, +long+, +complex+, +boolean+, +string+
+   and homogenous lists.
+5. Print statements
+6. Recusive functions
+
+Things we do not support
+------------------------
+
+There are a number of features of the Python language we do not support:
+
+1. Shadowing of variables
+2. Objects
+3. Dynamic Dispatch
+4. Augmented assignments (`+=`, etc.)
+5. Gathering information from conditionals or expressions. This is something we
+   cannot support as due to the limitations of our types and operators each
+   combination of types and parameters is allowed. It does not make sense, but
+   Python allows it. So when we would deduce any type from it's usage in an 
+   expression we would be unsafe regarding the semantics of the Python runtime.
+
+We also do not support incorrect Python programs.
+
+
+The following things we do not support but are easily fixable by some more AG
+work or the expansion of our definitions:
+
+1. Function calls inside expressions, other than directly assigning the call
+   result to a variable.
+2. Determine the types of variables by their usage. In the <<example1,first
+    example below>> could be concluded that `b` is of type int. Where in
+    <<example2, second example below>> it could be concluded that it is a
+    string. However, see point 5. of the list above.
+
+[[example1]]
+[source, python]
+----
+a = "string" * b
+----   
+
+[[example2]]
+[source, python]
+----
+a = "string" + b
+----
+       
+The used lattice
+----------------
+The lattice used is P(Var x P(Type)), where P represents the power set. The context integration results in the lattice Context x P(Var x P(Type)).
+We do a forward may analysis (uses unions) that calculates the least sets. Bottom (⊥) the empty set of types, Top (T) is `any
+type' and in between are all possible sets of types. Types in our case are only
+the basic types such as: +int+, +float+, +long+, +complex+, +boolean+, +string+
+and homogenous lists. To widen, we simply setwise join two sets of types.
+    
+
+MFP - Minimal Fixed Point
+--------------------------
+We started out by implementing a general minimal fixed point algorithm. Here
+is the code we used to test it against the examples given in the slides.
+The code was written before we started implementing function calls, therefore
+they contain +undefined+ parameters.
+
+Based on slide 29 of http://www.cs.uu.nl/docs/vakken/apa/02dataflow-intraprocedural.pdf
+
+[source, haskell]
+----
+data Var = X | Y | Z deriving (Eq, Ord, Show)
+
+instance All Var where
+  elems = [X, Y, Z]
+
+-- Have to swap F because it's a backwards analysis
+test1 :: M.Map Integer [Var]
+test1 = mfp (map swap [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (5, 3)]) [1..6] [6] [Z] (M.fromList transfer) undefined undefined
+   where swap (a, b) = (b, a)
+
+transfer = [(1, f1), (2, f2), (3, f3), (4, f4), (5, f5), (6, f6)]
+
+f1 s = nub $ X : (s \\ [Y])
+f2 s = nub $ s \\ [Z]
+f3 s = nub $ X : s
+f4 s = nub $ [X, Z] ++ (s \\ [Z])
+f5 s = nub $ X : (s \\ [X])
+f6 s = nub $ s \\ [X]
+----
+
+Based on slide 74 of http://www.cs.uu.nl/docs/vakken/apa/02dataflow-intraprocedural.pdf
+
+[source, haskell]
+----
+test2 :: M.Map Int (M.Map Var Constant)
+test2 = mfp [(2, 3), (3, 4), (4, 5), (5, 6), (6, 4)] [2..6] [2] (M.fromList [(X, Top), (Y, Top), (Z, Top)])
+            (M.fromList transfer2) undefined undefined
+
+transfer2 = [(2, g2), (3, g3), (4, g4), (5, g5), (6, g6)]
+
+g2 = M.insert Y (Constant 2)
+g3 = M.insert Z (Constant 1)
+g4 = id
+g5 s = case M.lookup Z s of
+        (Just (Constant z)) -> case M.lookup Y s of
+            (Just (Constant y)) -> M.insert Z (Constant $ z * y) s
+            (Just Bottom) -> error "Using uninitialized variable"
+            (Just Top) -> M.insert Z Top s
+        (Just Top) -> s
+        (Just Bottom) -> error "Using uninitialized variable"
+g6 s = case M.lookup X s of
+        (Just (Constant x)) -> M.insert X (Constant $ x - 1) s
+        (Just Bottom) -> error "Using uninitialized variable"
+        (Just Top) -> s
+----
+
+Embellished monotone framework
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To use it as an embellished monotone framework, we added context: a map from
+callstrings to environments. To avoid poisoning and to ensure we are always
+using the right context, we have changed the MFP algorithm in the following
+way: instead of starting with every edge of the control flow graph in the
+worklist, we only insert the outgoing edges of the start node, with an empty
+callstring. We re-insert edges that need updating in the same way as the
+original algorithm, but include the callstring that the currently modified edge
+had so we ensure it is in the correct context. Only in the cases of a function
+call or a return, there we create a new environment with a new, longer
+callstring that we use for its outgoing edges. This also implies that we do not
+analyse dead code, because those edges will never be added.
+
+We limit the length of the callstrings to ensure the analysis terminates.
+
+Usage and Graph Generation
+--------------------------
+It might be possible that `./softtype` and `./softtype-graph` have lost their
+executable flag in the process of shipping. Please execute the following in the
+directory if that was the case.
+
+----
+chmod +x softtype softtype-graph
+----
+
+----
+>./softtype --help
+programoptions [OPTIONS] [ITEM]
+
+Common flags:
+  -o --output=FILE           Output file
+  -c --callstringlength=INT  max Length of the call string (not used atm)
+  -t --typeoutput=Graph      Graph|Plain|Debug
+  -? --help                  Display help message
+  -V --version               Print version information
+----
+
+As mentioned before we can generate PDF files from a Python file. This can be
+done by the following command: `./softtype-graph $testfile $pdf` and to
+immediately open it (on OS X): `./softtype-graph $testfile $pdf && open $pdf`.
+
+In the graph the starting point is denoted by a node with a red circle.
+
+NOTE: The lexer needs a trailing newline at the of the file for some reason, so
+      be sure to provide one!
+
+Examples
+~~~~~~~~
+Test files can be found in the 'test' folder. Here are some examples.
+
+The first part shows the AST, where each program is numbered (function calls
+get two: one for before entering the function, one after returning). In the
+examples below, they are the last arguments to the constructors. The second
+part of the output shows for each of these program points, for each variable
+in scope the set of types our analysis thinks it can have.
+
+[source, bash]
+----
+$ ./softtype -t=Plain test/functioncall.py
+The AST:
+IModule [
+         IFun "foo" [IParam "a" Nothing Nothing] Nothing [IAssign [IVar "a"] (IInt 1 "1") 1,
+                                                          IReturn (Just (IVar "a")) 2] 0,
+         IAssign [IVar "b"] (IFloat 0.0 "0.0") 3,
+         IAssign [IVar "c"] (ICall (IVar "foo") [IArgExpr (IVar "b") 7] 5 6) 4,
+         IAssign [IVar "c"] (ICall (IVar "foo") [IArgExpr (IVar "c") 11] 9 10) 8
+        ]
+Softtyped result:
+[(0,[([],fromList []),([5],fromList [("a",fromList [Type Float]),("b",fromList [Type Float])]),
+                      ([9],fromList [("a",fromList [Type Int]),("b",fromList [Type Float]),("c",fromList [Type Int])])]),
+(1,[([],fromList []),([5],fromList [("a",fromList [Type Int]),("b",fromList [Type Float])]),
+                     ([9],fromList [("a",fromList [Type Int]),("b",fromList [Type Float]),("c",fromList [Type Int])])]),
+(2,[([],fromList []),([5],fromList [("a",fromList [Type Int]),("b",fromList [Type Float]),("rfoo",fromList [Type Int])]),
+                     ([9],fromList [("a",fromList [Type Int]),("b",fromList [Type Float]),("c",fromList [Type Int]),("rfoo",fromList [Type Int])])]),
+(3,[([],fromList [("b",fromList [Type Float])]),([5],fromList []),([9],fromList [])]),
+(4,[([],fromList [("b",fromList [Type Float]),("c",fromList [Type Int])]),([5],fromList []),([9],fromList [])]),
+(5,[([],fromList [("a",fromList [Type Float]),("b",fromList [Type Float])]),([5],fromList []),([9],fromList [])]),
+(6,[([],fromList [("b",fromList [Type Float]),("rfoo",fromList [Type Int])]),([5],fromList []),([9],fromList [])]),
+(7,[([],fromList [("b",fromList [Type Float])]),([5],fromList []),([9],fromList [])]),
+(8,[([],fromList [("b",fromList [Type Float]),("c",fromList [Type Int])]),([5],fromList []),([9],fromList [])]),
+(9,[([],fromList [("a",fromList [Type Int]),("b",fromList [Type Float]),("c",fromList [Type Int])]),([5],fromList []),([9],fromList [])]),
+(10,[([],fromList [("b",fromList [Type Float]),("c",fromList [Type Int]),("rfoo",fromList [Type Int])]),([5],fromList []),([9],fromList [])]),
+(11,[([],fromList [("b",fromList [Type Float]),("c",fromList [Type Int])]),([5],fromList []),([9],fromList [])])
+]
+----
+
+[source, bash]
+----
+$ ./softtype -t=Plain test/indirection.py                                                                                                                                                                                                                      (20:05:51 28-08)
+The AST:
+IModule [
+         IFun "f" [] Nothing [IConditional [IGuard (IBool True) [IReturn (Just (IImaginary 1.0 "1.0j")) 2] 1]
+                                            [IReturn (Just (IFloat 1.0 "1.0")) 3]
+                             ] 0,
+         IFun "g" [] Nothing [IAssign [IVar "a"] (IInt 0 "0") 5,
+                              IAssign [IVar "b"] (ICall (IVar "f") [] 7 8) 6,
+                              IReturn (Just (IVar "b")) 9
+                             ] 4,
+         IAssign [IVar "a"] (ICall (IVar "g") [] 11 12) 10
+        ]
+Softtyped result:
+[(0,[([],fromList []),([11],fromList []),([11,7],fromList [("a",fromList [Type Int])])]),
+(1,[([],fromList []),([11],fromList []),([11,7],fromList [("a",fromList [Type Int])])]),
+(2,[([],fromList []),([11],fromList []),([11,7],fromList [("a",fromList [Type Int]),("rf",fromList [Type Complex])])]),
+(3,[([],fromList []),([11],fromList []),([11,7],fromList [("a",fromList [Type Int]),("rf",fromList [Type Float])])]),
+(4,[([],fromList []),([11],fromList []),([11,7],fromList [])]),
+(5,[([],fromList []),([11],fromList [("a",fromList [Type Int])]),([11,7],fromList [])]),
+(6,[([],fromList []),([11],fromList [("a",fromList [Type Int]),("b",fromList [Type Float,Type Complex])]),([11,7],fromList [])]),
+(7,[([],fromList []),([11],fromList [("a",fromList [Type Int])]),([11,7],fromList [])]),
+(8,[([],fromList []),([11],fromList [("a",fromList [Type Int]),("rf",fromList [Type Float,Type Complex])]),([11,7],fromList [])]),
+(9,[([],fromList []),([11],fromList [("a",fromList [Type Int]),("b",fromList [Type Float,Type Complex]),("rg",fromList [Type Float,Type Complex])]),([11,7],fromList [])]),
+(10,[([],fromList [("a",fromList [Type Float,Type Complex])]),([11],fromList []),([11,7],fromList [])]),
+(11,[([],fromList []),([11],fromList []),([11,7],fromList [])]),
+(12,[([],fromList [("rg",fromList [Type Float,Type Complex])]),([11],fromList []),([11,7],fromList [])])
+]
+----
+
+Graphs
+~~~~~~
+We can also generate images of the call graphs. Examples:
+
+image:fib.png["Control flow of fib.py",link="fib.png"]
+
+We can also annotate the graphs with the context in each node:
+
+.Annotated flow of functioncall.py
+image:functioncall.png["Annotated flow of functioncall.py",width=400,link="functioncall.png"]
+
+.Annotated flow of indirection.py
+image:indirection.png["Annotated flow of indirection.py",width=400,link="indirection.png"]
+
+.Annotated flow of conditional.py
+image:conditional.png["Annotated flow of conditional.py",width=400,link="conditional.png"]
+
+.Annotated flow of while.py
+image:while.png["Annotated flow of while.py",width=400,link="while.png"]
+
+.Annotated flow of print.py
+image:print.png["Annotated flow of print.py",link="print.png"]
+
+.Annotated flow of loop.py
+image:loop.png["Annotated flow of print.py",width=400,link="loop.png"]
+
+See also fib.pdf and fac.pdf for larger examples.
+
+Notes on the language
+---------------------
+
+* Python does not allow shadowing, so assigning to a variable puts the variable
+  in local scope. You cannot use the same variable in the expression then.  
+  So this means that we have to discard all inherited information on the
+  variable when it gets assigned to.
+* When we encounter an expression, we use all the possible types of the
+  arguments to look up what the type of the result can be. It is possible that
+  this can lead to impossible combinations, which are then discarded. For
+  example, multiplication of strings with integers is allowed, while
+  multiplication of strings with floats isn't. If `a` is known to be a `String`
+  and `b` either an `Int` or a `Float`, then `a * b` will be a `String` (it
+  assumes `b` has type integer here). It would be possible to try to conclude
+  that certain types are impossible if they yield no valid combinations in an
+  expressions, but we have not implemented this.

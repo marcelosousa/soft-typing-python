@@ -1,0 +1,27 @@
+name:                  softtyping
+version:               0.0.3
+synopsis:              Soft typing for a subset of the Python Language 
+description:           Soft typing assignment for APA 2011 (Utrecht University)
+category:              Compilers/Interpreters
+copyright:             (c) 2011 Utrecht University
+author:                Marcelo Sousa, Alessandro Vermeulen, Thijs Alkemade 
+maintainer:            Alessandro Vermeulen <a.vermeulen@students.uu.nl>
+license:               GPL
+stability:             provisional
+tested-with:           GHC == 6.12.3
+build-type:            Simple
+cabal-version:         >= 1.6
+extra-source-files:    README, README.html, makefile, src/Main.hs,
+                       src/Analysis/*.ag, src/IPython/*.hs,
+                       src/IPython/*.ag, src/Analysis/*.hs, src/Output/*.hs,
+                       softtype, softtype-graph, softtype-graph-png, test/*.py, fib.png,
+                       functioncall.png, indirection.png, conditional.png, while.png,
+                       print.png, loop.png, fac.pdf, fib.pdf
+
+executable softtype-python
+  main-is:             Main.hs
+  build-depends:       base, language-python, pretty, cmdargs, containers >= 0.3
+  other-modules:       IPython.AST, Analysis.Python, Output.Graph, IPython.Conversion,
+                       Data.List.Utils
+  hs-source-dirs:      src
+  ld-options:          -Wl,-read_only_relocs,suppress

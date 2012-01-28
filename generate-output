@@ -1,0 +1,10 @@
+# /bin/sh
+for f in test/*.py 
+do
+  # echo `dirname $f` `basename $f .py`
+  BASE=`basename $f .py`
+  OUT="output/""$BASE"
+  echo $OUT
+  ./softtype-graph $f $OUT".pdf"
+  ./softtype-graph-png $f $OUT".png"
+done

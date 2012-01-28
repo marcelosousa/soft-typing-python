@@ -1,0 +1,2 @@
+# !/bin/sh
+./softtype --typeoutput=AnnGraph $1 | dot -Tpdf -o $2
